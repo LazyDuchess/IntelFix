@@ -1,7 +1,20 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "pch.h"
+#define EXTERN_DLL_EXPORT extern "C" __declspec(dllexport)
 
-BOOL APIENTRY DllMain( HMODULE hModule,
+DWORD oldAffinity;
+DWORD oldSystemAffinity;
+HANDLE curProcess;
+
+DWORD WINAPI RestoreAffinityThread(LPVOID param)
+{
+    Sleep(5000);
+    SetProcessAffinityMask(curProcess, oldAffinity);
+    FreeLibraryAndExitThread((HMODULE)param, 0);
+    return 0;
+}
+
+EXTERN_DLL_EXPORT BOOL APIENTRY DllMain(HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
                      )
@@ -9,6 +22,10 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+        curProcess = GetCurrentProcess();
+        GetProcessAffinityMask(curProcess, &oldAffinity, &oldSystemAffinity);
+        SetProcessAffinityMask(curProcess, 1);
+        CreateThread(0, 0, RestoreAffinityThread, hModule, 0, 0);
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
