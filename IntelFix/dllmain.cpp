@@ -2,14 +2,14 @@
 #include "pch.h"
 #define EXTERN_DLL_EXPORT extern "C" __declspec(dllexport)
 
-DWORD oldAffinity;
-DWORD oldSystemAffinity;
+PDWORD oldAffinity;
+PDWORD oldSystemAffinity;
 HANDLE curProcess;
 
 DWORD WINAPI RestoreAffinityThread(LPVOID param)
 {
     Sleep(5000);
-    SetProcessAffinityMask(curProcess, oldAffinity);
+    SetProcessAffinityMask(curProcess, (DWORD_PTR)&oldAffinity);
     FreeLibraryAndExitThread((HMODULE)param, 0);
     return 0;
 }
@@ -23,7 +23,7 @@ EXTERN_DLL_EXPORT BOOL APIENTRY DllMain(HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
         curProcess = GetCurrentProcess();
-        GetProcessAffinityMask(curProcess, &oldAffinity, &oldSystemAffinity);
+        GetProcessAffinityMask(curProcess, (PDWORD_PTR)&oldAffinity, (PDWORD_PTR)&oldSystemAffinity);
         SetProcessAffinityMask(curProcess, 1);
         CreateThread(0, 0, RestoreAffinityThread, hModule, 0, 0);
     case DLL_THREAD_ATTACH:
